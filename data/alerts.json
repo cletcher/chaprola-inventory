@@ -1,0 +1,12 @@
+[
+  {"alert_id": "ALERT-000001", "asset_id": "ASSET-000043", "alert_type": "OVERDUE", "message": "Dell Precision 5570 checked out to James Brown is overdue since 2026-02-28", "created_at": "2026-03-01T00:00:00Z", "acknowledged": "false"},
+  {"alert_id": "ALERT-000002", "asset_id": "ASSET-000047", "alert_type": "OVERDUE", "message": "Sonos One Speaker checked out to Chris Taylor is overdue since 2026-02-15", "created_at": "2026-02-16T00:00:00Z", "acknowledged": "false"},
+  {"alert_id": "ALERT-000003", "asset_id": "ASSET-000008", "alert_type": "OVERDUE", "message": "Herman Miller Aeron Chair checked out to Sarah Johnson is overdue since 2026-03-01", "created_at": "2026-03-02T00:00:00Z", "acknowledged": "false"},
+  {"alert_id": "ALERT-000004", "asset_id": "ASSET-000024", "alert_type": "LOW_STOCK", "message": "Logitech C920 Webcam is below reorder threshold (8 < 20)", "created_at": "2026-02-01T00:00:00Z", "acknowledged": "false"},
+  {"alert_id": "ALERT-000005", "asset_id": "ASSET-000030", "alert_type": "LOW_STOCK", "message": "Anker PowerPort Charger is below reorder threshold (12 < 25)", "created_at": "2026-01-20T00:00:00Z", "acknowledged": "false"},
+  {"alert_id": "ALERT-000006", "asset_id": "ASSET-000037", "alert_type": "LOW_STOCK", "message": "Kensington Docking Station is below reorder threshold (7 < 15)", "created_at": "2026-01-25T00:00:00Z", "acknowledged": "false"},
+  {"alert_id": "ALERT-000007", "asset_id": "ASSET-000012", "alert_type": "DEPRECIATION", "message": "Dell PowerEdge R750 value dropped below 80% of purchase price", "created_at": "2026-01-10T00:00:00Z", "acknowledged": "true"},
+  {"alert_id": "ALERT-000008", "asset_id": "ASSET-000015", "alert_type": "AUDIT_DUE", "message": "Canon EOS R5 Camera is due for quarterly audit", "created_at": "2026-02-15T00:00:00Z", "acknowledged": "true"},
+  {"alert_id": "ALERT-000009", "asset_id": "ASSET-000031", "alert_type": "DUE_SOON", "message": "iPad Pro 12.9 checked out to Tom Anderson due in 5 days", "created_at": "2026-03-14T00:00:00Z", "acknowledged": "false"},
+  {"alert_id": "ALERT-000010", "asset_id": "ASSET-000004", "alert_type": "DUE_SOON", "message": "Apple MacBook Pro 14 checked out to John Smith due in 3 days", "created_at": "2026-03-12T00:00:00Z", "acknowledged": "false"}
+]

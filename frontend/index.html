@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chaprola Inventory Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📦 Chaprola Inventory Tracker</h1>
+            <p class="subtitle">Server-side batch processing with /run-each</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="inventory">Inventory</button>
+            <button class="tab-btn" data-tab="reports">Reports</button>
+            <button class="tab-btn" data-tab="batch">Batch Operations</button>
+            <button class="tab-btn" data-tab="alerts">Alerts</button>
+        </div>
+
+        <div id="inventory" class="tab-content active">
+            <div class="filters">
+                <input type="text" id="searchBox" placeholder="Search items...">
+                <select id="categoryFilter">
+                    <option value="">All Categories</option>
+                </select>
+                <select id="statusFilter">
+                    <option value="">All Status</option>
+                    <option value="Available">Available</option>
+                    <option value="Checked Out">Checked Out</option>
+                    <option value="Low Stock">Low Stock</option>
+                    <option value="Overdue">Overdue</option>
+                </select>
+            </div>
+
+            <div id="inventoryTable"></div>
+        </div>
+
+        <div id="reports" class="tab-content">
+            <h2>Inventory Reports</h2>
+            <div class="report-buttons">
+                <button onclick="runDepreciationReport()">📊 Depreciation Analysis</button>
+                <button onclick="runValueReport()">💰 Asset Value Summary</button>
+                <button onclick="runLocationReport()">📍 Items by Location</button>
+            </div>
+            <div id="reportOutput"></div>
+        </div>
+
+        <div id="batch" class="tab-content">
+            <h2>Batch Operations (Server-side /run-each)</h2>
+            <p class="info">These operations run on Chaprola's server, processing all matching records in a single API call.</p>
+
+            <div class="batch-section">
+                <h3>Update Depreciation Values</h3>
+                <p>Recalculate current values for all items based on depreciation rates</p>
+                <button onclick="runBatchDepreciation()" class="batch-btn">Run Batch Calculation</button>
+            </div>
+
+            <div class="batch-section">
+                <h3>Generate Low Stock Alerts</h3>
+                <p>Check all items against reorder thresholds</p>
+                <button onclick="checkLowStock()" class="batch-btn">Check All Items</button>
+            </div>
+
+            <div id="batchResults"></div>
+        </div>
+
+        <div id="alerts" class="tab-content">
+            <h2>Active Alerts</h2>
+            <div id="alertsList"></div>
+        </div>
+
+        <footer>
+            <p>Built with <a href="https://chaprola.org" target="_blank">Chaprola</a> — Agent-First Data Platform</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -18,3 +18,9 @@
 This maintains the /run-each showcase while avoiding PHI detection.
 
 **Alternative if needed:** Sign the BAA (even though this is not actual PHI) to enable full checkout tracking features.
+
+## Git Remote Configuration
+
+**Issue:** No git remote configured for this repository. Attempted to push after completing fix_field_name_v1 task but got error: "fatal: No configured push destination."
+
+**Status:** Commit was successful locally (commit efdd857). Remote push will need to be configured by repository owner if needed.

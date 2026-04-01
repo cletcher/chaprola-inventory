@@ -47,7 +47,7 @@ async function loadInventory() {
             limit: 1000
         });
 
-        itemsData = result.results || [];
+        itemsData = result.records || [];
         renderInventory();
         populateCategoryFilter();
     } catch (error) {
@@ -245,7 +245,7 @@ async function checkLowStock() {
             where: {field: 'status', op: 'eq', value: 'Low Stock'}
         });
 
-        const lowStockItems = result.results || [];
+        const lowStockItems = result.records || [];
 
         if (lowStockItems.length === 0) {
             results.innerHTML = '<div class="success">All items are well stocked!</div>';
@@ -275,7 +275,7 @@ async function loadAlerts() {
             limit: 100
         });
 
-        alertsData = result.results || [];
+        alertsData = result.records || [];
         renderAlerts();
     } catch (error) {
         document.getElementById('alertsList').innerHTML = `

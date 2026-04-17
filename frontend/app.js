@@ -1,5 +1,5 @@
 const API_BASE = 'https://api.chaprola.org';
-const API_KEY = 'REDACTED_OLD_INVENTORY_KEY';
+const SITE_KEY = 'site_1b1379623d31a252292831345a60adf3b1478c241ca96a27dbfd2a12b43a3da4';
 const USER_ID = 'chaprola-inventory';
 const PROJECT = 'inventory';
 
@@ -21,16 +21,22 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-// API Helper
+// API Helper (retries once on 401 — CORS preflight race on first load)
 async function chaprolaAPI(endpoint, body) {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const doFetch = () => fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${API_KEY}`
+            'Authorization': `Bearer ${SITE_KEY}`
         },
         body: JSON.stringify(body)
     });
+
+    let response = await doFetch();
+    if (response.status === 401) {
+        await new Promise(r => setTimeout(r, 500));
+        response = await doFetch();
+    }
 
     const data = await response.json();
     if (data.error) throw new Error(data.error);
@@ -144,7 +150,7 @@ async function runDepreciationReport() {
     }
 }
 
-// Run value report
+// Run value report (computed client-side — fields are text-typed)
 async function runValueReport() {
     const output = document.getElementById('reportOutput');
     output.innerHTML = '<div class="loading">Calculating asset values...</div>';
@@ -154,23 +160,22 @@ async function runValueReport() {
             userid: USER_ID,
             project: PROJECT,
             file: 'items',
-            aggregate: [
-                {field: 'current_value', func: 'sum'},
-                {field: 'purchase_price', func: 'sum'},
-                {field: 'asset_id', func: 'count'}
-            ]
+            limit: 1000
         });
 
-        const totalValue = parseFloat(result.aggregates.current_value_sum).toLocaleString('en-US', {minimumFractionDigits: 2});
-        const totalPurchase = parseFloat(result.aggregates.purchase_price_sum).toLocaleString('en-US', {minimumFractionDigits: 2});
-        const count = result.aggregates.asset_id_count;
+        const items = result.records || [];
+        let totalPurchase = 0, totalValue = 0;
+        items.forEach(item => {
+            totalPurchase += parseFloat(item.purchase_price) || 0;
+            totalValue += parseFloat(item.current_value) || 0;
+        });
 
         output.innerHTML = `
             <strong>Asset Value Summary</strong>\n
-            Total Items: ${count}
-            Total Purchase Value: $${totalPurchase}
-            Current Total Value: $${totalValue}
-            Total Depreciation: $${(parseFloat(result.aggregates.purchase_price_sum) - parseFloat(result.aggregates.current_value_sum)).toLocaleString('en-US', {minimumFractionDigits: 2})}
+            Total Items: ${items.length}
+            Total Purchase Value: $${totalPurchase.toLocaleString('en-US', {minimumFractionDigits: 2})}
+            Current Total Value: $${totalValue.toLocaleString('en-US', {minimumFractionDigits: 2})}
+            Total Depreciation: $${(totalPurchase - totalValue).toLocaleString('en-US', {minimumFractionDigits: 2})}
         `;
     } catch (error) {
         output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
@@ -196,9 +201,12 @@ async function runLocationReport() {
         });
 
         let report = '<strong>Items by Location</strong>\n\n';
-        for (const [location, count] of Object.entries(result.pivot.rows)) {
+        const rows = result.pivot.rows || [];
+        const values = result.pivot.values || [];
+        rows.forEach((location, i) => {
+            const count = values[i] ? values[i][0] : 0;
             report += `${location}: ${count} items\n`;
-        }
+        });
 
         output.innerHTML = report;
     } catch (error) {
@@ -294,9 +302,9 @@ function renderAlerts() {
 
     container.innerHTML = alertsData.map(alert => `
         <div class="alert-card">
-            <h4>${alert.alert_type}: ${alert.asset_id}</h4>
-            <p>${alert.message}</p>
-            <small>Created: ${alert.created_date} | Severity: ${alert.severity}</small>
+            <h4>${(alert.alert_type || '').trim()}: ${(alert.asset_id || '').trim()}</h4>
+            <p>${(alert.message || '').trim()}</p>
+            <small>Created: ${(alert.created_at || '').trim()}</small>
         </div>
     `).join('');
 }

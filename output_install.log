@@ -1,7 +1,0 @@
-Done. Here's a summary:
-
-**Installation verified:**
-- `@chaprola/mcp-server@1.4.3` installed globally at `/home/cletcher/.npm-global/lib`
-
-**Configuration created:**
-- `.mcp.json` created in the repo root with the chaprola server configured using `npx` command and `@chaprola/mcp-server` as the argument, with empty `env` object (credentials to be set during build phase)

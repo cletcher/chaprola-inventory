@@ -250,7 +250,7 @@ async function checkLowStock() {
             userid: USER_ID,
             project: PROJECT,
             file: 'items',
-            where: {field: 'status', op: 'eq', value: 'Low Stock'}
+            where: [{field: 'status', op: 'eq', value: 'Low Stock'}]
         });
 
         const lowStockItems = result.records || [];

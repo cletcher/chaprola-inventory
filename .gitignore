@@ -1,0 +1,15 @@
+# Build artifacts
+*.tar.gz
+build_*.log
+output_build.log
+output_install.log
+
+# Status / completion scratch files
+STATUS
+STATUS_REPORT.md
+COMPLETION_REPORT.md
+
+# OS / editor
+.DS_Store
+*.swp
+*.swo

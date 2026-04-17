@@ -130,52 +130,54 @@ document.getElementById('searchBox').addEventListener('input', applyFilters);
 document.getElementById('categoryFilter').addEventListener('change', applyFilters);
 document.getElementById('statusFilter').addEventListener('change', applyFilters);
 
-// Run depreciation report
+// Fetch a published report's raw text output
+async function chaprolaReport(name) {
+    const url = `${API_BASE}/report?userid=${encodeURIComponent(USER_ID)}&project=${encodeURIComponent(PROJECT)}&name=${encodeURIComponent(name)}`;
+    const response = await fetch(url);
+    return response.text();
+}
+
+function parsePipeStats(text) {
+    const stats = {};
+    text.split('\n').forEach(line => {
+        const [key, value] = line.split('|');
+        if (key) stats[key.trim()] = (value || '').trim();
+    });
+    return stats;
+}
+
+function formatCurrency(n) {
+    return '$' + (parseFloat(n) || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+// Run depreciation report — iterates all 48 items server-side, prints per-item + totals
 async function runDepreciationReport() {
     const output = document.getElementById('reportOutput');
     output.innerHTML = '<div class="loading">Running depreciation analysis...</div>';
 
     try {
-        const result = await chaprolaAPI('/run', {
-            userid: USER_ID,
-            project: PROJECT,
-            name: 'calc_depreciation',
-            primary_file: 'items',
-            record: 1
-        });
-
-        output.innerHTML = `<strong>Depreciation Analysis Results:</strong>\n\n${result.output}`;
+        const text = await chaprolaReport('calc_depreciation');
+        output.innerHTML = `<strong>Depreciation Analysis Results:</strong>\n\n${text}`;
     } catch (error) {
         output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
     }
 }
 
-// Run value report (computed client-side — fields are text-typed)
+// Run value report — server-side aggregation via VALUE_STATS.CS (no client-side math)
 async function runValueReport() {
     const output = document.getElementById('reportOutput');
     output.innerHTML = '<div class="loading">Calculating asset values...</div>';
 
     try {
-        const result = await chaprolaAPI('/query', {
-            userid: USER_ID,
-            project: PROJECT,
-            file: 'items',
-            limit: 1000
-        });
-
-        const items = result.records || [];
-        let totalPurchase = 0, totalValue = 0;
-        items.forEach(item => {
-            totalPurchase += parseFloat(item.purchase_price) || 0;
-            totalValue += parseFloat(item.current_value) || 0;
-        });
+        const text = await chaprolaReport('VALUE_STATS');
+        const stats = parsePipeStats(text);
 
         output.innerHTML = `
             <strong>Asset Value Summary</strong>\n
-            Total Items: ${items.length}
-            Total Purchase Value: $${totalPurchase.toLocaleString('en-US', {minimumFractionDigits: 2})}
-            Current Total Value: $${totalValue.toLocaleString('en-US', {minimumFractionDigits: 2})}
-            Total Depreciation: $${(totalPurchase - totalValue).toLocaleString('en-US', {minimumFractionDigits: 2})}
+            Total Items: ${stats.total_items || '0'}
+            Total Purchase Value: ${formatCurrency(stats.total_purchase)}
+            Current Total Value: ${formatCurrency(stats.total_current)}
+            Total Depreciation: ${formatCurrency(stats.total_depreciation)}
         `;
     } catch (error) {
         output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
@@ -304,9 +306,19 @@ function renderAlerts() {
         <div class="alert-card">
             <h4>${(alert.alert_type || '').trim()}: ${(alert.asset_id || '').trim()}</h4>
             <p>${(alert.message || '').trim()}</p>
-            <small>Created: ${(alert.created_at || '').trim()}</small>
+            <small>Created: ${formatAlertDate((alert.created_at || '').trim())}</small>
         </div>
     `).join('');
+}
+
+function formatAlertDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true
+    });
 }
 
 // Initialize app

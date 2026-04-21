@@ -13,3 +13,8 @@ COMPLETION_REPORT.md
 .DS_Store
 *.swp
 *.swo
+
+# Secrets (added 2026-04-21 after public-key leak)
+.env
+.env.local
+.env.*.local

@@ -21,3 +21,6 @@ COMPLETION_REPORT.md
 
 # MCP config (contains API key)
 .mcp.json
+
+# Any *.local scratch (pre-scrub backups, editor sidecars, etc.)
+*.local

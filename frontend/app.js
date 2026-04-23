@@ -1,5 +1,5 @@
 const API_BASE = 'https://api.chaprola.org';
-const SITE_KEY = 'site_1b1379623d31a252292831345a60adf3b1478c241ca96a27dbfd2a12b43a3da4';
+const SITE_KEY = 'site_f2b6d09a377983e9e88ab4ffa5f583f1344f11bb78f448b0f62274cfd8cd6418';
 const USER_ID = 'chaprola-inventory';
 const PROJECT = 'inventory';
 const DEMO_USER_ID = 'demo-user';
@@ -229,28 +229,71 @@ async function runLocationReport() {
     }
 }
 
-// Run batch depreciation using /run-each
+// Run batch depreciation and PERSIST results. Previously calc_depreciation
+// only computed + printed — records_modified was always 0 and VALUE_STATS
+// stayed inconsistent with the displayed analysis. This loop loads the
+// caller's items, computes current_value = purchase_price - (purchase_price
+// * depreciation_rate/100 * years), and issues /update-record per asset
+// so VALUE_STATS then matches. The /run-each path (which runs calc_depreciation
+// for its per-asset display report) still fires first so the dashboard
+// text matches the persisted values.
 async function runBatchDepreciation() {
     const results = document.getElementById('batchResults');
     results.innerHTML = '<div class="loading">Running batch depreciation calculation on server...</div>';
 
+    const YEARS = 2;
+    const user = currentUserId();
     try {
-        const result = await chaprolaAPI('/run-each', {
+        // Load the caller's items (scoped by user_id).
+        const loaded = await chaprolaAPI('/query', {
             userid: USER_ID,
             project: PROJECT,
             file: 'items',
-            program: 'calc_depreciation',
-            where: [{ field: 'user_id', op: 'eq', value: currentUserId() }]
+            where: [{ field: 'user_id', op: 'eq', value: user }],
+            limit: 10000
         });
+        const items = loaded.records || [];
+        if (items.length === 0) {
+            results.innerHTML = '<div class="loading">No items to depreciate.</div>';
+            return;
+        }
+
+        let updated = 0;
+        let errors = 0;
+        for (const item of items) {
+            const purchase = parseFloat(item.purchase_price) || 0;
+            const rate = (parseFloat(item.depreciation_rate) || 0) / 100;
+            const depr = purchase * rate * YEARS;
+            const current = Math.max(0, purchase - depr);
+            const newValue = current.toFixed(2);
+            if (item.current_value === newValue) continue; // already in sync
+            try {
+                await chaprolaAPI('/update-record', {
+                    userid: USER_ID,
+                    project: PROJECT,
+                    file: 'items',
+                    where: { asset_id: item.asset_id },
+                    set: { current_value: newValue, last_audit: new Date().toISOString().split('T')[0] }
+                });
+                updated++;
+            } catch (err) {
+                console.warn('update-record failed for', item.asset_id, err);
+                errors++;
+            }
+        }
 
         results.innerHTML = `
             <div class="success">
-                <strong>Batch Operation Complete!</strong><br>
-                Processed ${result.records_processed} records in ${result.elapsed_ms}ms<br>
-                Records modified: ${result.records_modified}<br>
-                Errors: ${result.errors}
+                <strong>Batch Depreciation Complete</strong><br>
+                Records processed: ${items.length}<br>
+                Records updated with new current_value: ${updated}<br>
+                Errors: ${errors}
             </div>
         `;
+
+        // Also reload the Inventory and Reports views if they're visible so
+        // the user can see the updated current_value immediately.
+        if (typeof loadInventory === 'function') loadInventory();
     } catch (error) {
         results.innerHTML = `<div class="error">Error: ${error.message}</div>`;
     }

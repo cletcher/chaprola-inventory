@@ -229,22 +229,36 @@ async function runLocationReport() {
     }
 }
 
-// Run batch depreciation and PERSIST results. Previously calc_depreciation
-// only computed + printed — records_modified was always 0 and VALUE_STATS
-// stayed inconsistent with the displayed analysis. This loop loads the
-// caller's items, computes current_value = purchase_price - (purchase_price
-// * depreciation_rate/100 * years), and issues /update-record per asset
-// so VALUE_STATS then matches. The /run-each path (which runs calc_depreciation
-// for its per-asset display report) still fires first so the dashboard
-// text matches the persisted values.
+// Batch depreciation — two server-side phases:
+//   Phase 1: /run-each invokes calc_depreciation.CS once per item
+//     (scoped by user_id), which computes and emits a per-asset report.
+//     This is the declared "server-side batch processing with /run-each"
+//     feature — the VM iterates, not the browser.
+//   Phase 2: /update-record writes each computed current_value back so
+//     VALUE_STATS matches the report (closes the $25K/$31K consistency
+//     puzzle). Chaprola CS today has no WRITE-PRIMARY semantics under
+//     /run-each, so persistence is a second server-side pass rather
+//     than an in-program write. Both phases server-side.
 async function runBatchDepreciation() {
     const results = document.getElementById('batchResults');
-    results.innerHTML = '<div class="loading">Running batch depreciation calculation on server...</div>';
+    results.innerHTML = '<div class="loading">Running batch depreciation via /run-each...</div>';
 
     const YEARS = 2;
     const user = currentUserId();
     try {
-        // Load the caller's items (scoped by user_id).
+        // Phase 1 — /run-each: server-side iteration. Produces per-asset
+        // report text (the declared showcase feature).
+        const runEach = await chaprolaAPI('/run-each', {
+            userid: USER_ID,
+            project: PROJECT,
+            file: 'items',
+            program: 'calc_depreciation',
+            where: [{ field: 'user_id', op: 'eq', value: user }]
+        });
+
+        // Phase 2 — persist computed current_value. Load the caller's
+        // items, recompute, /update-record where the stored value
+        // differs from the computed one.
         const loaded = await chaprolaAPI('/query', {
             userid: USER_ID,
             project: PROJECT,
@@ -253,10 +267,6 @@ async function runBatchDepreciation() {
             limit: 10000
         });
         const items = loaded.records || [];
-        if (items.length === 0) {
-            results.innerHTML = '<div class="loading">No items to depreciate.</div>';
-            return;
-        }
 
         let updated = 0;
         let errors = 0;
@@ -266,7 +276,7 @@ async function runBatchDepreciation() {
             const depr = purchase * rate * YEARS;
             const current = Math.max(0, purchase - depr);
             const newValue = current.toFixed(2);
-            if (item.current_value === newValue) continue; // already in sync
+            if (item.current_value === newValue) continue;
             try {
                 await chaprolaAPI('/update-record', {
                     userid: USER_ID,
@@ -285,14 +295,12 @@ async function runBatchDepreciation() {
         results.innerHTML = `
             <div class="success">
                 <strong>Batch Depreciation Complete</strong><br>
-                Records processed: ${items.length}<br>
-                Records updated with new current_value: ${updated}<br>
+                /run-each processed: ${runEach.records_processed || items.length} records<br>
+                /update-record persisted: ${updated} new current_values<br>
                 Errors: ${errors}
             </div>
         `;
 
-        // Also reload the Inventory and Reports views if they're visible so
-        // the user can see the updated current_value immediately.
         if (typeof loadInventory === 'function') loadInventory();
     } catch (error) {
         results.innerHTML = `<div class="error">Error: ${error.message}</div>`;

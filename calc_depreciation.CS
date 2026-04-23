@@ -1,9 +1,12 @@
-// calc_depreciation — Per-asset depreciation report over 2-year straight-line
-// Primary: items
+// calc_depreciation — Per-asset depreciation report for the caller
+// Primary: items (expected column: user_id varchar 40, added via /alter)
+// Multi-user: scoped by PARAM.user_id.
 // Columns: asset_id, title, purchase, depr (2yr), current_value
 // Followed by summary totals.
 
 OPEN PRIMARY "items"
+
+QUERY items INTO mine WHERE user_id EQ PARAM.user_id
 
 LET purchase = 0
 LET rate = 0
@@ -33,10 +36,10 @@ MOVE "----------" U.62 10
 MOVE "----------" U.76 10
 PRINT 0
 
-100 SEEK rec
+100 READ mine rec
     IF EOF GOTO 200 ;
-    GET purchase FROM P.purchase_price
-    GET rate FROM P.depreciation_rate
+    GET purchase FROM mine.purchase_price
+    GET rate FROM mine.depreciation_rate
     LET rate = rate / 100
     LET depr = purchase * rate
     LET depr = depr * years
@@ -46,8 +49,8 @@ PRINT 0
     LET total_depr = total_depr + depr
     LET total_current = total_current + current
     MOVE BLANKS U.1 90
-    MOVE P.asset_id U.1 12
-    MOVE P.title U.15 28
+    MOVE mine.asset_id U.1 12
+    MOVE mine.title U.15 28
     PUT purchase INTO U.46 14 D 2
     PUT depr INTO U.60 14 D 2
     PUT current INTO U.74 14 D 2

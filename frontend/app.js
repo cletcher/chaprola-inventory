@@ -2,6 +2,16 @@ const API_BASE = 'https://api.chaprola.org';
 const SITE_KEY = 'site_1b1379623d31a252292831345a60adf3b1478c241ca96a27dbfd2a12b43a3da4';
 const USER_ID = 'chaprola-inventory';
 const PROJECT = 'inventory';
+const DEMO_USER_ID = 'demo-user';
+
+function currentUserId() {
+    const u = window.chaprolaAuth && window.chaprolaAuth.getUser();
+    return (u && u.sub) || DEMO_USER_ID;
+}
+
+function isLoggedIn() {
+    return !!(window.chaprolaAuth && window.chaprolaAuth.getUser());
+}
 
 let itemsData = [];
 let alertsData = [];
@@ -50,6 +60,7 @@ async function loadInventory() {
             userid: USER_ID,
             project: PROJECT,
             file: 'items',
+            where: [{ field: 'user_id', op: 'eq', value: currentUserId() }],
             limit: 1000
         });
 
@@ -130,9 +141,10 @@ document.getElementById('searchBox').addEventListener('input', applyFilters);
 document.getElementById('categoryFilter').addEventListener('change', applyFilters);
 document.getElementById('statusFilter').addEventListener('change', applyFilters);
 
-// Fetch a published report's raw text output
+// Fetch a published report's raw text output. user_id is passed so the
+// server-side program filters to the caller's items.
 async function chaprolaReport(name) {
-    const url = `${API_BASE}/report?userid=${encodeURIComponent(USER_ID)}&project=${encodeURIComponent(PROJECT)}&name=${encodeURIComponent(name)}`;
+    const url = `${API_BASE}/report?userid=${encodeURIComponent(USER_ID)}&project=${encodeURIComponent(PROJECT)}&name=${encodeURIComponent(name)}&user_id=${encodeURIComponent(currentUserId())}`;
     const response = await fetch(url);
     return response.text();
 }
@@ -194,6 +206,7 @@ async function runLocationReport() {
             userid: USER_ID,
             project: PROJECT,
             file: 'items',
+            where: [{ field: 'user_id', op: 'eq', value: currentUserId() }],
             pivot: {
                 row: 'location',
                 column: '',
@@ -226,7 +239,8 @@ async function runBatchDepreciation() {
             userid: USER_ID,
             project: PROJECT,
             file: 'items',
-            program: 'calc_depreciation'
+            program: 'calc_depreciation',
+            where: [{ field: 'user_id', op: 'eq', value: currentUserId() }]
         });
 
         results.innerHTML = `
@@ -252,7 +266,10 @@ async function checkLowStock() {
             userid: USER_ID,
             project: PROJECT,
             file: 'items',
-            where: [{field: 'status', op: 'eq', value: 'Low Stock'}]
+            where: [
+                { field: 'user_id', op: 'eq', value: currentUserId() },
+                { field: 'status', op: 'eq', value: 'Low Stock' }
+            ]
         });
 
         const lowStockItems = result.records || [];
@@ -282,6 +299,7 @@ async function loadAlerts() {
             userid: USER_ID,
             project: PROJECT,
             file: 'alerts',
+            where: [{ field: 'user_id', op: 'eq', value: currentUserId() }],
             limit: 100
         });
 

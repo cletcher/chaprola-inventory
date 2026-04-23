@@ -5,7 +5,6 @@ output_build.log
 output_install.log
 
 # Status / completion scratch files
-STATUS
 STATUS_REPORT.md
 COMPLETION_REPORT.md
 

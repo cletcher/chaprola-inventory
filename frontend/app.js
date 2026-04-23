@@ -162,13 +162,18 @@ function formatCurrency(n) {
     return '$' + (parseFloat(n) || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
-// Run depreciation report — iterates all 48 items server-side, prints per-item + totals
+// Run depreciation report — iterates all items server-side, prints per-item + totals.
+// Calls depreciation_report (standalone QUERY+READ aggregator) not
+// calc_depreciation (the /run-each per-record version used by Batch
+// Operations). Two distinct programs: this one produces the narrative
+// report; calc_depreciation operates on one record at a time for
+// /run-each iteration.
 async function runDepreciationReport() {
     const output = document.getElementById('reportOutput');
     output.innerHTML = '<div class="loading">Running depreciation analysis...</div>';
 
     try {
-        const text = await chaprolaReport('calc_depreciation');
+        const text = await chaprolaReport('depreciation_report');
         output.innerHTML = `<strong>Depreciation Analysis Results:</strong>\n\n${text}`;
     } catch (error) {
         output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
